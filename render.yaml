@@ -1,0 +1,24 @@
+# Render 免费层配置记录（实际参数在 Render 控制台配置；蓝图模式需 GitHub 连接，
+# 公开仓库手动创建时以本文件为准）
+services:
+  - type: web
+    name: air-print-central
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: LIBSQL_URL        # Turso 数据库地址（机密，面板填）
+        sync: false
+      - key: LIBSQL_AUTH_TOKEN # Turso 数据库令牌（机密，面板填）
+        sync: false
+      - key: JWT_SECRET        # JWT 签名密钥（面板生成随机值）
+        sync: false
+      - key: SESSION_SECURE
+        value: "1"
+      - key: CONVERT_TIMEOUT
+        value: "60"
+      - key: RATE_LIMIT
+        value: "60"
