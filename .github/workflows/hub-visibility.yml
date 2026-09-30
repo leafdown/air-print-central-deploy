@@ -1,0 +1,32 @@
+name: hub-visibility
+on:
+  workflow_dispatch:
+jobs:
+  flip-public:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login & inspect
+        env:
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          JWT=$(curl -s -X POST "https://hub.docker.com/v2/users/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$DH_USER\",\"password\":\"$DH_TOKEN\"}" | jq -r .token)
+          echo "JWT len: ${#JWT}"
+          echo "--- authed repo info ---"
+          curl -s -H "Authorization: JWT $JWT" \
+            "https://hub.docker.com/v2/repositories/airprintrelay/air-print-central/" | jq '{name,namespace,is_private,pull_count,last_updated}'
+          echo "--- PATCH private=false ---"
+          curl -s -X PATCH "https://hub.docker.com/v2/repositories/airprintrelay/air-print-central/" \
+            -H "Authorization: JWT $JWT" -H "Content-Type: application/json" \
+            -d '{"private": false}' | jq '{name,is_private}' || true
+          echo "--- repo info after ---"
+          curl -s -H "Authorization: JWT $JWT" \
+            "https://hub.docker.com/v2/repositories/airprintrelay/air-print-central/" | jq '{name,is_private}'
+          echo "--- anonymous pull test ---"
+          TT=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:airprintrelay/air-print-central:pull" | jq -r .token)
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TT" \
+            -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json" \
+            "https://registry-1.docker.io/v2/airprintrelay/air-print-central/manifests/latest")
+          echo "anon manifest HTTP: $CODE"
