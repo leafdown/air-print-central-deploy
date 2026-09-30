@@ -1,0 +1,5 @@
+# 自构建带阿里云 DNS 模块的 Caddy（DNS-01 证书签发用）
+FROM caddy:2-builder AS builder
+RUN xcaddy build --with github.com/caddy-dns/alidns
+FROM caddy:2
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy
