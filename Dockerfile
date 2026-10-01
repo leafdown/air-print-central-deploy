@@ -10,8 +10,9 @@ RUN apk add --no-cache \
         libreoffice-writer libreoffice-calc libreoffice-impress \
         font-noto-cjk
 WORKDIR /app
-COPY print-server /app/print-server
-RUN chmod +x /app/print-server && mkdir -p /tmp/uploads /tmp/office-cache
+ARG TARGETARCH
+COPY print-server-linux-${TARGETARCH} /app/print-server
+RUN chmod +x /app/print-server && ln -sf /app/print-server /app/print-server-linux-${TARGETARCH} && mkdir -p /tmp/uploads /tmp/office-cache
 # soffice 以 root 运行需要可写 HOME（LibreOffice profile）
 ENV HOME=/tmp \
     UPLOADS_DIR=/tmp/uploads \
